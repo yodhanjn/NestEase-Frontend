@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { createPG } from '../../services/pgService'
+import { createPG, uploadPGImages } from '../../services/pgService'
 import toast from 'react-hot-toast'
 import { ChevronLeft } from 'lucide-react'
 
@@ -9,6 +9,7 @@ const AMENITY_OPTIONS = ['WiFi', 'AC', 'Parking', 'Laundry', 'Meals', 'CCTV', 'G
 export default function AddPGPage() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
+  const [images, setImages] = useState<File[]>([])
   const [form, setForm] = useState({
     pgName: '', description: '', address: '', city: '', state: '', pincode: '',
     lat: '', lng: '', price: '', genderAllowed: 'any', availableRooms: '', amenities: [] as string[],
@@ -30,8 +31,16 @@ export default function AddPGPage() {
     }
     setLoading(true)
     try {
-      await createPG({ ...form, amenities: form.amenities })
-      toast.success('PG listing created! Awaiting admin approval.')
+      const createRes = await createPG({ ...form, amenities: form.amenities })
+      const createdPGId = createRes.data?.pg?._id
+
+      if (createdPGId && images.length > 0) {
+        const imageForm = new FormData()
+        images.forEach((file) => imageForm.append('images', file))
+        await uploadPGImages(createdPGId, imageForm)
+      }
+
+      toast.success(images.length > 0 ? 'PG listing and images uploaded successfully.' : 'PG listing created! Awaiting admin approval.')
       navigate('/dashboard/owner')
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Failed to create listing')
@@ -123,6 +132,18 @@ export default function AddPGPage() {
                   </button>
                 ))}
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">PG Images (optional)</label>
+              <input
+                type="file"
+                multiple
+                accept=".jpg,.jpeg,.png,.webp"
+                onChange={(e) => setImages(Array.from(e.target.files || []))}
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#1A6B6B] bg-white"
+              />
+              <p className="text-xs text-gray-400 mt-1">You can upload up to 10 images. Max size 5MB each.</p>
             </div>
 
             <button

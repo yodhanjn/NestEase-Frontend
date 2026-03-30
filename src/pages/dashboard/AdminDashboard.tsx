@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
+  actOnFraudReport,
   approvePG,
+  getFraudReports,
   getAdminPGStats,
   getPendingPGs,
   getUnderperformingPGs,
@@ -8,7 +10,7 @@ import {
   removePG,
 } from '../../services/adminService'
 import toast from 'react-hot-toast'
-import { CheckCircle2, MapPin, ShieldAlert, Star, Trash2, XCircle } from 'lucide-react'
+import { CheckCircle2, Flag, MapPin, ShieldAlert, Star, Trash2, XCircle } from 'lucide-react'
 
 export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
@@ -23,27 +25,31 @@ export default function AdminDashboard() {
 
   const [pendingPGs, setPendingPGs] = useState<any[]>([])
   const [underperformingPGs, setUnderperformingPGs] = useState<any[]>([])
+  const [fraudReports, setFraudReports] = useState<any[]>([])
   const [filters, setFilters] = useState({
     ratingThreshold: 3,
     minReviews: 5,
   })
+  const [reportFilter, setReportFilter] = useState('open')
 
   const hasAnyWork = useMemo(
-    () => pendingPGs.length > 0 || underperformingPGs.length > 0,
-    [pendingPGs, underperformingPGs]
+    () => pendingPGs.length > 0 || underperformingPGs.length > 0 || fraudReports.length > 0,
+    [pendingPGs, underperformingPGs, fraudReports]
   )
 
   const fetchAll = async () => {
     try {
-      const [statsRes, pendingRes, underperformingRes] = await Promise.all([
+      const [statsRes, pendingRes, underperformingRes, reportsRes] = await Promise.all([
         getAdminPGStats(),
         getPendingPGs(),
         getUnderperformingPGs(filters.ratingThreshold, filters.minReviews),
+        getFraudReports(reportFilter),
       ])
 
       setStats(statsRes.data.stats)
       setPendingPGs(pendingRes.data.pgs || [])
       setUnderperformingPGs(underperformingRes.data.pgs || [])
+      setFraudReports(reportsRes.data.reports || [])
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'Failed to load admin dashboard data')
     } finally {
@@ -55,6 +61,18 @@ export default function AdminDashboard() {
     fetchAll()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  useEffect(() => {
+    const fetchReports = async () => {
+      try {
+        const reportsRes = await getFraudReports(reportFilter)
+        setFraudReports(reportsRes.data.reports || [])
+      } catch {
+        // keep existing list and avoid blocking other dashboard sections
+      }
+    }
+    fetchReports()
+  }, [reportFilter])
 
   const handleApprove = async (id: string) => {
     setActionLoadingId(id)
@@ -117,6 +135,24 @@ export default function AdminDashboard() {
       toast.success('Performance filter applied')
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'Failed to filter underperforming PGs')
+    }
+  }
+
+  const handleReportAction = async (
+    reportId: string,
+    status: 'under_review' | 'resolved' | 'dismissed',
+    action: 'none' | 'flag_pg' | 'deactivate_pg'
+  ) => {
+    setActionLoadingId(reportId)
+    try {
+      const res = await actOnFraudReport(reportId, { status, action })
+      const updated = res.data.report
+      setFraudReports((prev) => prev.map((item) => (item._id === reportId ? updated : item)))
+      toast.success('Fraud report updated')
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to update report')
+    } finally {
+      setActionLoadingId(null)
     }
   }
 
@@ -264,6 +300,81 @@ export default function AdminDashboard() {
                         >
                           <Trash2 size={14} /> Remove Listing
                         </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <section className="bg-white border border-gray-100 rounded-2xl p-6 mt-8">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+                <div className="flex items-center gap-2">
+                  <Flag size={18} className="text-red-600" />
+                  <h2 className="text-lg font-semibold text-[#2D2D2D]">Fraud Reports</h2>
+                </div>
+                <select
+                  value={reportFilter}
+                  onChange={(e) => setReportFilter(e.target.value)}
+                  className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white outline-none"
+                >
+                  <option value="all">All</option>
+                  <option value="open">Open</option>
+                  <option value="under_review">Under Review</option>
+                  <option value="resolved">Resolved</option>
+                  <option value="dismissed">Dismissed</option>
+                </select>
+              </div>
+
+              {fraudReports.length === 0 ? (
+                <p className="text-sm text-gray-500">No fraud reports in this filter.</p>
+              ) : (
+                <div className="space-y-4">
+                  {fraudReports.map((report) => (
+                    <div key={report._id} className="border border-gray-100 rounded-xl p-4">
+                      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+                        <div>
+                          <h3 className="font-semibold text-[#2D2D2D]">
+                            {report.reportedPg?.pgName || 'Listing removed'}
+                          </h3>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Reason: <span className="font-medium">{report.reason}</span> | Risk Score:{' '}
+                            <span className="font-medium">{report.riskScore}</span> | Status:{' '}
+                            <span className="font-medium">{report.status}</span>
+                          </p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            By: {report.reportedBy?.name || 'System'} ({report.reportedBy?.email || 'N/A'})
+                          </p>
+                          {report.details ? (
+                            <p className="text-xs text-gray-500 mt-2 bg-gray-50 border border-gray-100 rounded-lg px-2 py-1.5">
+                              {report.details}
+                            </p>
+                          ) : null}
+                        </div>
+
+                        <div className="flex gap-2 flex-wrap">
+                          <button
+                            disabled={actionLoadingId === report._id}
+                            onClick={() => handleReportAction(report._id, 'under_review', 'flag_pg')}
+                            className="text-xs px-3 py-2 rounded-lg border border-amber-200 text-amber-700 hover:bg-amber-50 disabled:opacity-50"
+                          >
+                            Mark Under Review
+                          </button>
+                          <button
+                            disabled={actionLoadingId === report._id}
+                            onClick={() => handleReportAction(report._id, 'resolved', 'deactivate_pg')}
+                            className="text-xs px-3 py-2 rounded-lg border border-red-200 text-red-700 hover:bg-red-50 disabled:opacity-50"
+                          >
+                            Resolve + Deactivate
+                          </button>
+                          <button
+                            disabled={actionLoadingId === report._id}
+                            onClick={() => handleReportAction(report._id, 'dismissed', 'none')}
+                            className="text-xs px-3 py-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                          >
+                            Dismiss
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}

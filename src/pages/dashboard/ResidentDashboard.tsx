@@ -1,6 +1,6 @@
 import { useAuth } from '../../context/AuthContext'
 import { Link } from 'react-router-dom'
-import { Search, Star, ClipboardCheck, CalendarCheck, MessageCircle } from 'lucide-react'
+import { Search, Star, ClipboardCheck, CalendarCheck, MessageCircle, Sparkles } from 'lucide-react'
 
 export default function ResidentDashboard() {
   const { user } = useAuth()
@@ -11,6 +11,7 @@ export default function ResidentDashboard() {
     { icon: <Star size={20} />, label: 'Submit Review', to: '/dashboard/resident/reviews', desc: 'Rate your current PG' },
     { icon: <ClipboardCheck size={20} />, label: 'Daily Feedback', to: '/dashboard/resident/feedback', desc: 'Submit one structured feedback per day' },
     { icon: <MessageCircle size={20} />, label: 'Messages', to: '/dashboard/resident/chat', desc: 'Chat with PG owners in real-time' },
+    { icon: <Sparkles size={20} />, label: 'AI Recommendations', to: '/dashboard/resident/recommendations', desc: 'Get smart PG suggestions based on your stays' },
   ]
 
   return (

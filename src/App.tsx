@@ -19,6 +19,7 @@ import DailyFeedbackPage from './pages/dashboard/DailyFeedbackPage'
 import OwnerBookingsPage from './pages/dashboard/OwnerBookingsPage'
 import AdminDashboard from './pages/dashboard/AdminDashboard'
 import ChatPage from './pages/dashboard/ChatPage'
+import ResidentRecommendationsPage from './pages/dashboard/ResidentRecommendationsPage'
 
 const ProtectedRoute = ({ children, roles }: { children: React.ReactNode; roles?: string[] }) => {
   const { user, loading } = useAuth()
@@ -74,6 +75,11 @@ function AppRoutes() {
       <Route path="/dashboard/resident/chat" element={
         <ProtectedRoute roles={['resident']}>
           <Layout><ChatPage /></Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/dashboard/resident/recommendations" element={
+        <ProtectedRoute roles={['resident']}>
+          <Layout><ResidentRecommendationsPage /></Layout>
         </ProtectedRoute>
       } />
 

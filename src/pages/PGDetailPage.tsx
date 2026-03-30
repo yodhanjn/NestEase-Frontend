@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { MapPin, Star, IndianRupee, Users, Wifi, Shield, Phone, Mail, ChevronLeft, MessageCircle } from 'lucide-react'
+import { MapPin, Star, IndianRupee, Users, Wifi, Shield, Phone, Mail, ChevronLeft, MessageCircle, Flag } from 'lucide-react'
 import { getPGById } from '../services/pgService'
 import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
+import { submitFraudReport } from '../services/reportService'
 
 // Fix leaflet default marker icon
 delete (L.Icon.Default.prototype as any)._getIconUrl
@@ -23,6 +24,9 @@ export default function PGDetailPage() {
   const [pg, setPG] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [activeImage, setActiveImage] = useState(0)
+  const [showReportForm, setShowReportForm] = useState(false)
+  const [reporting, setReporting] = useState(false)
+  const [reportForm, setReportForm] = useState({ reason: '', details: '' })
 
   useEffect(() => {
     const fetchPG = async () => {
@@ -50,6 +54,29 @@ export default function PGDetailPage() {
   if (!pg) return null
 
   const genderLabel = pg.genderAllowed === 'male' ? 'Boys Only' : pg.genderAllowed === 'female' ? 'Girls Only' : 'Co-ed'
+
+  const handleReportListing = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!reportForm.reason) {
+      toast.error('Please select a report reason')
+      return
+    }
+    setReporting(true)
+    try {
+      await submitFraudReport({
+        reportedPgId: pg._id,
+        reason: reportForm.reason,
+        details: reportForm.details,
+      })
+      toast.success('Report submitted. Admin will review it.')
+      setShowReportForm(false)
+      setReportForm({ reason: '', details: '' })
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to submit report')
+    } finally {
+      setReporting(false)
+    }
+  }
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F9F9F9' }}>
@@ -228,6 +255,51 @@ export default function PGDetailPage() {
                   <span>Honest resident reviews</span>
                 </div>
               </div>
+
+              {user && (
+                <div className="mt-4">
+                  <button
+                    onClick={() => setShowReportForm((prev) => !prev)}
+                    className="w-full text-xs px-3 py-2 rounded-lg border border-red-200 text-red-700 hover:bg-red-50 flex items-center justify-center gap-1.5"
+                  >
+                    <Flag size={14} />
+                    {showReportForm ? 'Cancel Report' : 'Report this listing'}
+                  </button>
+                </div>
+              )}
+
+              {showReportForm && user && (
+                <form onSubmit={handleReportListing} className="mt-3 p-3 rounded-xl border border-red-100 bg-red-50/40 space-y-2">
+                  <select
+                    value={reportForm.reason}
+                    onChange={(e) => setReportForm((prev) => ({ ...prev, reason: e.target.value }))}
+                    className="w-full border border-red-100 rounded-lg px-3 py-2 text-xs outline-none bg-white"
+                  >
+                    <option value="">Select reason</option>
+                    <option value="Fake photos">Fake photos</option>
+                    <option value="Wrong location details">Wrong location details</option>
+                    <option value="Price mismatch">Price mismatch</option>
+                    <option value="Safety concerns">Safety concerns</option>
+                    <option value="Owner misconduct">Owner misconduct</option>
+                    <option value="Possible fraud or scam">Possible fraud or scam</option>
+                  </select>
+                  <textarea
+                    value={reportForm.details}
+                    onChange={(e) => setReportForm((prev) => ({ ...prev, details: e.target.value }))}
+                    rows={2}
+                    placeholder="Optional details for admin review..."
+                    className="w-full border border-red-100 rounded-lg px-3 py-2 text-xs outline-none resize-none bg-white"
+                  />
+                  <button
+                    type="submit"
+                    disabled={reporting}
+                    className="w-full text-white text-xs font-medium py-2 rounded-lg disabled:opacity-60"
+                    style={{ backgroundColor: '#CC2D2D' }}
+                  >
+                    {reporting ? 'Submitting...' : 'Submit Fraud Report'}
+                  </button>
+                </form>
+              )}
             </div>
 
             {/* Owner Info */}

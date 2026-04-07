@@ -244,7 +244,7 @@ export default function AdminDashboard() {
                   <h2 className="text-lg font-semibold text-[#2D2D2D]">Underperforming PGs</h2>
                 </div>
 
-                <div className="flex gap-2 items-center">
+                <div className="flex flex-wrap gap-2 items-center">
                   <input
                     type="number"
                     min={1}
@@ -254,7 +254,7 @@ export default function AdminDashboard() {
                     onChange={(e) =>
                       setFilters((prev) => ({ ...prev, ratingThreshold: Number(e.target.value) || 3 }))
                     }
-                    className="w-24 border border-gray-200 rounded-lg px-2 py-1.5 text-sm outline-none"
+                    className="w-20 sm:w-24 border border-gray-200 rounded-lg px-2 py-1.5 text-sm outline-none"
                     title="Rating threshold"
                   />
                   <input
@@ -264,12 +264,12 @@ export default function AdminDashboard() {
                     onChange={(e) =>
                       setFilters((prev) => ({ ...prev, minReviews: Number(e.target.value) || 5 }))
                     }
-                    className="w-24 border border-gray-200 rounded-lg px-2 py-1.5 text-sm outline-none"
+                    className="w-20 sm:w-24 border border-gray-200 rounded-lg px-2 py-1.5 text-sm outline-none"
                     title="Minimum reviews"
                   />
                   <button
                     onClick={refreshUnderperforming}
-                    className="text-xs px-3 py-2 rounded-lg border border-[#1A6B6B] text-[#1A6B6B] hover:bg-[#E8F4F4]"
+                    className="text-xs px-3 py-2 rounded-lg border border-[#1A6B6B] text-[#1A6B6B] hover:bg-[#E8F4F4] w-full sm:w-auto"
                   >
                     Apply
                   </button>
@@ -352,25 +352,25 @@ export default function AdminDashboard() {
                           ) : null}
                         </div>
 
-                        <div className="flex gap-2 flex-wrap">
+                        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                           <button
                             disabled={actionLoadingId === report._id}
                             onClick={() => handleReportAction(report._id, 'under_review', 'flag_pg')}
-                            className="text-xs px-3 py-2 rounded-lg border border-amber-200 text-amber-700 hover:bg-amber-50 disabled:opacity-50"
+                            className="text-xs px-3 py-2 rounded-lg border border-amber-200 text-amber-700 hover:bg-amber-50 disabled:opacity-50 w-full sm:w-auto"
                           >
                             Mark Under Review
                           </button>
                           <button
                             disabled={actionLoadingId === report._id}
                             onClick={() => handleReportAction(report._id, 'resolved', 'deactivate_pg')}
-                            className="text-xs px-3 py-2 rounded-lg border border-red-200 text-red-700 hover:bg-red-50 disabled:opacity-50"
+                            className="text-xs px-3 py-2 rounded-lg border border-red-200 text-red-700 hover:bg-red-50 disabled:opacity-50 w-full sm:w-auto"
                           >
                             Resolve + Deactivate
                           </button>
                           <button
                             disabled={actionLoadingId === report._id}
                             onClick={() => handleReportAction(report._id, 'dismissed', 'none')}
-                            className="text-xs px-3 py-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                            className="text-xs px-3 py-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-50 w-full sm:w-auto"
                           >
                             Dismiss
                           </button>

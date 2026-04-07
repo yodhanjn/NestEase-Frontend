@@ -19,11 +19,11 @@ export default function ResidentDashboard() {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Welcome */}
         <div className="bg-white rounded-2xl p-6 border border-gray-100 mb-8">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <div className="w-14 h-14 rounded-full flex items-center justify-center text-white text-xl font-bold" style={{ backgroundColor: '#1A6B6B' }}>
               {user?.name.charAt(0).toUpperCase()}
             </div>
-            <div>
+            <div className="text-center sm:text-left">
               <h1 className="text-xl font-bold text-[#2D2D2D]">Welcome back, {user?.name.split(' ')[0]}!</h1>
               <p className="text-gray-500 text-sm mt-0.5">{user?.email} · Resident</p>
             </div>

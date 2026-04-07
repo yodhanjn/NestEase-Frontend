@@ -44,24 +44,24 @@ export default function OwnerDashboard() {
             <h1 className="text-2xl font-bold text-[#2D2D2D]">Owner Dashboard</h1>
             <p className="text-gray-500 text-sm mt-1">Welcome, {user?.name.split(' ')[0]}</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Link
               to="/dashboard/owner/chat"
-              className="flex items-center gap-2 font-semibold px-5 py-2.5 rounded-xl border border-[#1A6B6B] text-[#1A6B6B] text-sm"
+              className="flex items-center justify-center gap-2 font-semibold px-4 py-2.5 rounded-xl border border-[#1A6B6B] text-[#1A6B6B] text-sm w-full sm:w-auto"
             >
               <MessageCircle size={16} />
               Messages
             </Link>
             <Link
               to="/dashboard/owner/bookings"
-              className="flex items-center gap-2 font-semibold px-5 py-2.5 rounded-xl border border-[#1A6B6B] text-[#1A6B6B] text-sm"
+              className="flex items-center justify-center gap-2 font-semibold px-4 py-2.5 rounded-xl border border-[#1A6B6B] text-[#1A6B6B] text-sm w-full sm:w-auto"
             >
               <CalendarCheck size={16} />
               Booking Requests
             </Link>
             <Link
               to="/dashboard/owner/add-pg"
-              className="flex items-center gap-2 text-white font-semibold px-5 py-2.5 rounded-xl transition-colors text-sm"
+              className="flex items-center justify-center gap-2 text-white font-semibold px-4 py-2.5 rounded-xl transition-colors text-sm w-full sm:w-auto"
               style={{ backgroundColor: '#1A6B6B' }}
             >
               <Plus size={16} />
@@ -110,7 +110,7 @@ export default function OwnerDashboard() {
         ) : (
           <div className="space-y-4">
             {pgs.map((pg) => (
-              <div key={pg._id} className="bg-white rounded-2xl p-5 border border-gray-100 flex items-center gap-4">
+              <div key={pg._id} className="bg-white rounded-2xl p-5 border border-gray-100 flex flex-col sm:flex-row sm:items-center gap-4">
                 <div className="w-16 h-16 rounded-xl overflow-hidden bg-gray-100 shrink-0">
                   {pg.images.length > 0 ? (
                     <img src={pg.images[0]} alt={pg.pgName} className="w-full h-full object-cover" />
@@ -135,7 +135,7 @@ export default function OwnerDashboard() {
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
                   <button onClick={() => navigate(`/pg/${pg._id}`)} className="p-2 rounded-lg text-gray-400 hover:text-[#1A6B6B] hover:bg-[#E8F4F4] transition-colors">
                     <Eye size={16} />
                   </button>

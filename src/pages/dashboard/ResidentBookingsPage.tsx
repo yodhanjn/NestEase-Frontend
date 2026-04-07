@@ -52,7 +52,7 @@ export default function ResidentBookingsPage() {
           <div className="space-y-4">
             {bookings.map((booking) => (
               <div key={booking._id} className="bg-white border border-gray-100 rounded-2xl p-5">
-                <div className="flex justify-between items-start gap-4">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
                   <div>
                     <h3 className="font-semibold text-[#2D2D2D]">{booking.pg?.pgName}</h3>
                     <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
@@ -60,7 +60,7 @@ export default function ResidentBookingsPage() {
                       {booking.pg?.location?.address}, {booking.pg?.location?.city}
                     </p>
                   </div>
-                  <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${statusColor[booking.status] || 'bg-gray-100 text-gray-600'}`}>
+                  <span className={`text-xs font-medium px-2.5 py-1 rounded-full w-fit ${statusColor[booking.status] || 'bg-gray-100 text-gray-600'}`}>
                     {booking.status}
                   </span>
                 </div>
@@ -76,11 +76,11 @@ export default function ResidentBookingsPage() {
                   </p>
                 </div>
 
-                <div className="mt-4 flex gap-2">
-                  <Link to={`/pg/${booking.pg?._id}`} className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:border-[#1A6B6B] hover:text-[#1A6B6B]">
+                <div className="mt-4 flex flex-col sm:flex-row gap-2">
+                  <Link to={`/pg/${booking.pg?._id}`} className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:border-[#1A6B6B] hover:text-[#1A6B6B] text-center">
                     View PG
                   </Link>
-                  <Link to="/dashboard/resident/reviews" className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:border-[#1A6B6B] hover:text-[#1A6B6B]">
+                  <Link to="/dashboard/resident/reviews" className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:border-[#1A6B6B] hover:text-[#1A6B6B] text-center">
                     Submit Review
                   </Link>
                 </div>

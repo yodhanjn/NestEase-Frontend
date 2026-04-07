@@ -135,7 +135,7 @@ export default function AddPGPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">PG Images (optional)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">PG Images<span className="text-red-400">*</span></label>
               <input
                 type="file"
                 multiple

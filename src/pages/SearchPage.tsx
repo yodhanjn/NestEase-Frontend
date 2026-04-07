@@ -62,7 +62,7 @@ export default function SearchPage() {
       {/* Search Header */}
       <div className="bg-white border-b border-gray-100 sticky top-16 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <form onSubmit={handleSearch} className="flex items-center gap-3">
+          <form onSubmit={handleSearch} className="flex flex-col sm:flex-row sm:items-center gap-3">
             <div className="flex items-center gap-2 flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5">
               <Search size={16} className="text-gray-400 shrink-0" />
               <input
@@ -82,7 +82,7 @@ export default function SearchPage() {
             <select
               value={filters.sort}
               onChange={(e) => setFilters({ ...filters, sort: e.target.value })}
-              className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none bg-white text-gray-600"
+              className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none bg-white text-gray-600 w-full sm:w-auto"
             >
               <option value="">Sort: Latest</option>
               <option value="price_asc">Price: Low to High</option>
@@ -93,7 +93,7 @@ export default function SearchPage() {
             <button
               type="button"
               onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-colors ${showFilters ? 'border-[#1A6B6B] text-[#1A6B6B] bg-[#E8F4F4]' : 'border-gray-200 text-gray-600'}`}
+              className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-colors w-full sm:w-auto ${showFilters ? 'border-[#1A6B6B] text-[#1A6B6B] bg-[#E8F4F4]' : 'border-gray-200 text-gray-600'}`}
             >
               <SlidersHorizontal size={15} />
               Filters
@@ -101,7 +101,7 @@ export default function SearchPage() {
 
             <button
               type="submit"
-              className="text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors"
+              className="text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors w-full sm:w-auto"
               style={{ backgroundColor: '#1A6B6B' }}
             >
               Search

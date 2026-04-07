@@ -37,7 +37,7 @@ export default function LandingPage() {
             </p>
 
             {/* Search Bar */}
-            <form onSubmit={handleSearch} className="flex items-center gap-2 bg-white border border-gray-200 rounded-2xl p-2 shadow-sm max-w-xl mx-auto">
+            <form onSubmit={handleSearch} className="flex flex-col sm:flex-row sm:items-center gap-2 bg-white border border-gray-200 rounded-2xl p-2 shadow-sm max-w-xl mx-auto">
               <div className="flex items-center gap-2 flex-1 px-3">
                 <MapPin size={18} color="#1A6B6B" />
                 <input
@@ -50,7 +50,7 @@ export default function LandingPage() {
               </div>
               <button
                 type="submit"
-                className="flex items-center gap-2 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors"
+                className="flex items-center justify-center gap-2 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors w-full sm:w-auto"
                 style={{ backgroundColor: '#1A6B6B' }}
               >
                 <Search size={16} />

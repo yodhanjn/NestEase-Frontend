@@ -137,7 +137,7 @@ export default function Navbar() {
                       )}
                     </button>
                     {notificationsOpen && (
-                      <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-100 rounded-xl shadow-lg z-50">
+                      <div className="absolute right-0 mt-2 w-[min(22rem,calc(100vw-1rem))] bg-white border border-gray-100 rounded-xl shadow-lg z-50">
                         <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100">
                           <p className="text-sm font-semibold text-[#2D2D2D]">Notifications</p>
                           <button

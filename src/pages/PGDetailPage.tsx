@@ -121,7 +121,7 @@ export default function PGDetailPage() {
 
             {/* Details */}
             <div className="bg-white rounded-2xl p-6 border border-gray-100">
-              <div className="flex items-start justify-between mb-4">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-4">
                 <div>
                   <h1 className="text-2xl font-bold text-[#2D2D2D]">{pg.pgName}</h1>
                   <div className="flex items-center gap-1.5 mt-1 text-gray-500 text-sm">
@@ -129,7 +129,7 @@ export default function PGDetailPage() {
                     <span>{pg.location.address}, {pg.location.city}</span>
                   </div>
                 </div>
-                <div className="text-right">
+                <div className="text-left sm:text-right">
                   <div className="flex items-center gap-0.5 text-[#1A6B6B] font-bold text-xl">
                     <IndianRupee size={16} />
                     <span>{pg.price.toLocaleString('en-IN')}</span>
@@ -177,7 +177,7 @@ export default function PGDetailPage() {
                 <div className="p-4 border-b border-gray-50">
                   <h3 className="font-semibold text-[#2D2D2D]">Location</h3>
                 </div>
-                <div className="h-64">
+                <div className="h-56 sm:h-64">
                   <MapContainer
                     center={[pg.location.lat, pg.location.lng]}
                     zoom={15}
@@ -199,7 +199,7 @@ export default function PGDetailPage() {
           {/* Right Column — Owner Card + Booking */}
           <div className="space-y-5">
             {/* Book Now */}
-            <div className="bg-white rounded-2xl p-6 border border-gray-100 sticky top-24">
+            <div className="bg-white rounded-2xl p-6 border border-gray-100 lg:sticky lg:top-24">
               <div className="flex items-center gap-0.5 text-[#1A6B6B] font-bold text-2xl mb-1">
                 <IndianRupee size={18} />
                 <span>{pg.price.toLocaleString('en-IN')}</span>

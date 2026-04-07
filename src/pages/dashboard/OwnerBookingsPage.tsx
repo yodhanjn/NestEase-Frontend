@@ -155,25 +155,25 @@ export default function OwnerBookingsPage() {
                       {booking.status}
                     </span>
 
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-col sm:flex-row flex-wrap gap-2 w-full sm:w-auto">
                       <button
                         disabled={updatingId === booking._id || booking.status === 'confirmed'}
                         onClick={() => handleUpdateStatus(booking._id, 'confirmed')}
-                        className="text-xs px-3 py-1.5 rounded-lg border border-blue-200 text-blue-700 hover:bg-blue-50 disabled:opacity-50"
+                        className="text-xs px-3 py-1.5 rounded-lg border border-blue-200 text-blue-700 hover:bg-blue-50 disabled:opacity-50 w-full sm:w-auto"
                       >
                         Confirm
                       </button>
                       <button
                         disabled={updatingId === booking._id || booking.status === 'completed'}
                         onClick={() => handleUpdateStatus(booking._id, 'completed')}
-                        className="text-xs px-3 py-1.5 rounded-lg border border-green-200 text-green-700 hover:bg-green-50 disabled:opacity-50"
+                        className="text-xs px-3 py-1.5 rounded-lg border border-green-200 text-green-700 hover:bg-green-50 disabled:opacity-50 w-full sm:w-auto"
                       >
                         Complete
                       </button>
                       <button
                         disabled={updatingId === booking._id || booking.status === 'cancelled'}
                         onClick={() => handleUpdateStatus(booking._id, 'cancelled')}
-                        className="text-xs px-3 py-1.5 rounded-lg border border-red-200 text-red-700 hover:bg-red-50 disabled:opacity-50"
+                        className="text-xs px-3 py-1.5 rounded-lg border border-red-200 text-red-700 hover:bg-red-50 disabled:opacity-50 w-full sm:w-auto"
                       >
                         Cancel
                       </button>

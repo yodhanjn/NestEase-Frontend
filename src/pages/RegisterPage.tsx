@@ -2,10 +2,12 @@ import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Eye, EyeOff, Home } from 'lucide-react'
 import { register } from '../services/authService'
+import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
 
 export default function RegisterPage() {
   const navigate = useNavigate()
+  const { setAuthData } = useAuth()
   const [searchParams] = useSearchParams()
   const defaultRole = searchParams.get('role') || 'resident'
 
@@ -30,6 +32,16 @@ export default function RegisterPage() {
     setLoading(true)
     try {
       const res = await register(form)
+
+      if (res.data.token && res.data.user) {
+        setAuthData(res.data.token, res.data.user)
+        toast.success('Account created successfully!')
+        const dashboard =
+          res.data.user.role === 'owner' ? '/dashboard/owner' : '/dashboard/resident'
+        navigate(dashboard)
+        return
+      }
+
       toast.success('OTP sent to your email!')
       navigate(`/verify-otp?userId=${res.data.userId}&email=${form.email}`)
     } catch (err: any) {

@@ -4,7 +4,7 @@ import toast from 'react-hot-toast'
 import { Send, MessageCircle } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { getConversations, getMessages, sendMessage } from '../../services/chatService'
-import { connectChatSocket, disconnectChatSocket, getChatSocket } from '../../services/chatSocket'
+import { connectChatSocket, getChatSocket } from '../../services/chatSocket'
 
 type Conversation = {
   conversationKey: string
@@ -17,14 +17,20 @@ type Conversation = {
 type ChatMessage = {
   _id: string
   pg: string | { _id: string }
-  sender: { _id: string; name?: string }
-  receiver: { _id: string; name?: string }
+  sender: { _id: string; name?: string } | string
+  receiver: { _id: string; name?: string } | string
   content: string
   createdAt: string
 }
 
+const getUserId = (user: { _id?: string; id?: string } | null | undefined) =>
+  user?._id || user?.id || ''
+
+const isValidConversation = (conversation: Conversation) =>
+  Boolean(conversation?.pg?._id && conversation?.otherUser?._id && conversation?.otherUser?.name)
+
 export default function ChatPage() {
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const [searchParams] = useSearchParams()
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
@@ -33,14 +39,17 @@ export default function ChatPage() {
   const [active, setActive] = useState<Conversation | null>(null)
   const [content, setContent] = useState('')
 
+  const userId = getUserId(user)
+  const isOwner = user?.role === 'owner'
+
   const initialPgId = searchParams.get('pgId') || ''
   const initialUserId = searchParams.get('userId') || ''
   const initialOtherName = searchParams.get('name') || 'User'
   const initialPgName = searchParams.get('pgName') || 'PG'
-  const initialOtherRole = searchParams.get('role') || (user?.role === 'owner' ? 'resident' : 'owner')
+  const initialOtherRole = searchParams.get('role') || (isOwner ? 'resident' : 'owner')
 
   const activeMeta = useMemo(() => {
-    if (active) return active
+    if (active && isValidConversation(active)) return active
     if (initialPgId && initialUserId) {
       return {
         conversationKey: `${initialPgId}::temp`,
@@ -61,25 +70,34 @@ export default function ChatPage() {
   const loadConversations = async () => {
     try {
       const res = await getConversations()
-      setConversations(res.data.conversations || [])
-      return res.data.conversations || []
+      const list = (res.data.conversations || []).filter(isValidConversation)
+      setConversations(list)
+      return list
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'Failed to load conversations')
+      setConversations([])
       return []
     }
   }
 
   const loadMessages = async (pgId: string, otherUserId: string) => {
+    if (!pgId || !otherUserId) return
     try {
       const res = await getMessages(pgId, otherUserId)
       setMessages(res.data.messages || [])
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'Failed to load messages')
+      setMessages([])
     }
   }
 
   useEffect(() => {
-    if (!user?._id) return
+    if (authLoading) return
+
+    if (!userId) {
+      setLoading(false)
+      return
+    }
 
     let cancelled = false
 
@@ -93,8 +111,8 @@ export default function ChatPage() {
         const matchedFromUrl = hasUrlTarget
           ? convs.find(
               (c: Conversation) =>
-                String(c.pg?._id) === String(initialPgId) &&
-                String(c.otherUser?._id) === String(initialUserId)
+                String(c.pg._id) === String(initialPgId) &&
+                String(c.otherUser._id) === String(initialUserId)
             )
           : null
 
@@ -122,46 +140,42 @@ export default function ChatPage() {
     return () => {
       cancelled = true
     }
-  }, [user?._id, initialPgId, initialUserId])
+  }, [authLoading, userId, initialPgId, initialUserId])
 
   useEffect(() => {
-    if (!user?._id) return
+    if (!userId) return
 
-    let socket: ReturnType<typeof connectChatSocket> | null = null
-    try {
-      socket = connectChatSocket(user._id)
-      socket.off('chat:new_message')
-      socket.on('chat:new_message', (message: ChatMessage) => {
-        const currentActive = activeMetaRef.current
-        const msgPgId = typeof message.pg === 'string' ? message.pg : message.pg?._id
-        const senderId =
-          typeof message.sender === 'string' ? message.sender : message.sender?._id
-        const receiverId =
-          typeof message.receiver === 'string' ? message.receiver : message.receiver?._id
-        const msgOtherUserId = String(senderId) === String(user._id) ? receiverId : senderId
+    const socket = connectChatSocket(userId)
+    if (!socket) return
 
-        const isActiveChat =
-          currentActive &&
-          String(currentActive.pg._id) === String(msgPgId) &&
-          String(currentActive.otherUser._id) === String(msgOtherUserId)
+    const onNewMessage = (message: ChatMessage) => {
+      const currentActive = activeMetaRef.current
+      const msgPgId = typeof message.pg === 'string' ? message.pg : message.pg?._id
+      const senderId = typeof message.sender === 'string' ? message.sender : message.sender?._id
+      const receiverId = typeof message.receiver === 'string' ? message.receiver : message.receiver?._id
+      const msgOtherUserId = String(senderId) === String(userId) ? receiverId : senderId
 
-        if (isActiveChat) {
-          setMessages((prev) => (prev.some((m) => m._id === message._id) ? prev : [...prev, message]))
-        }
-        loadConversations()
-      })
-    } catch {
-      // Chat still works without live socket updates.
+      const isActiveChat =
+        currentActive &&
+        String(currentActive.pg._id) === String(msgPgId) &&
+        String(currentActive.otherUser._id) === String(msgOtherUserId)
+
+      if (isActiveChat) {
+        setMessages((prev) => (prev.some((m) => m._id === message._id) ? prev : [...prev, message]))
+      }
+      loadConversations()
     }
+
+    socket.off('chat:new_message', onNewMessage)
+    socket.on('chat:new_message', onNewMessage)
 
     return () => {
-      const s = getChatSocket()
-      s?.off('chat:new_message')
-      disconnectChatSocket()
+      socket.off('chat:new_message', onNewMessage)
     }
-  }, [user?._id])
+  }, [userId])
 
   const handleSelectConversation = async (conversation: Conversation) => {
+    if (!isValidConversation(conversation)) return
     setActive(conversation)
     await loadMessages(conversation.pg._id, conversation.otherUser._id)
     setConversations((prev) =>
@@ -194,33 +208,41 @@ export default function ChatPage() {
     }
   }
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-[60vh] flex items-center justify-center">
         <div className="animate-spin rounded-full h-10 w-10 border-2 border-[#1A6B6B] border-t-transparent" />
       </div>
     )
   }
 
+  if (!userId) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center px-4">
+        <p className="text-sm text-gray-500">Please sign in again to use messages.</p>
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#F9F9F9' }}>
+    <div style={{ backgroundColor: '#F9F9F9' }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <h1 className="text-2xl font-bold text-[#2D2D2D] mb-1">Messages</h1>
         <p className="text-sm text-gray-500 mb-6">
-          {user?.role === 'owner'
+          {isOwner
             ? 'Chat with residents who booked your PGs or messaged you first.'
             : 'Chat directly with PG owners about listings.'}
         </p>
 
-        <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden grid grid-cols-1 md:grid-cols-3 min-h-[620px] md:min-h-[620px]">
-          <aside className="border-r border-gray-100">
+        <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden grid grid-cols-1 md:grid-cols-3 min-h-[520px]">
+          <aside className="border-b md:border-b-0 md:border-r border-gray-100">
             <div className="p-4 border-b border-gray-100">
               <h2 className="font-semibold text-[#2D2D2D]">Conversations</h2>
             </div>
-            <div className="max-h-[560px] overflow-y-auto">
+            <div className="max-h-[320px] md:max-h-[560px] overflow-y-auto">
               {conversations.length === 0 ? (
                 <div className="p-6 text-sm text-gray-500">
-                  {user?.role === 'owner'
+                  {isOwner
                     ? 'No conversations yet. Open Booking Requests and use Message on a resident booking to start chatting.'
                     : 'No conversations yet. Open a PG listing and use Chat with Owner to start.'}
                 </div>
@@ -236,11 +258,13 @@ export default function ChatPage() {
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-[#2D2D2D] truncate">
-                          {conversation.otherUser.name}
+                          {conversation.otherUser?.name || 'User'}
                         </p>
-                        <p className="text-xs text-gray-500 truncate">{conversation.pg.pgName}</p>
+                        <p className="text-xs text-gray-500 truncate">
+                          {conversation.pg?.pgName || 'PG listing'}
+                        </p>
                         <p className="text-xs text-gray-400 truncate mt-1">
-                          {conversation.lastMessage.content}
+                          {conversation.lastMessage?.content || ''}
                         </p>
                       </div>
                       {conversation.unreadCount > 0 && (
@@ -255,7 +279,7 @@ export default function ChatPage() {
             </div>
           </aside>
 
-          <section className="md:col-span-2 flex flex-col min-h-[420px]">
+          <section className="md:col-span-2 flex flex-col min-h-[360px]">
             {activeMeta ? (
               <>
                 <div className="p-4 border-b border-gray-100">
@@ -263,7 +287,7 @@ export default function ChatPage() {
                   <p className="text-xs text-gray-500">{activeMeta.pg.pgName}</p>
                 </div>
 
-                <div className="flex-1 min-h-[280px] p-4 overflow-y-auto bg-[#FAFAFA]">
+                <div className="flex-1 min-h-[220px] p-4 overflow-y-auto bg-[#FAFAFA]">
                   {messages.length === 0 ? (
                     <div className="h-full flex items-center justify-center text-sm text-gray-400">
                       No messages yet. Start the conversation.
@@ -273,7 +297,7 @@ export default function ChatPage() {
                       {messages.map((message) => {
                         const senderId =
                           typeof message.sender === 'string' ? message.sender : message.sender?._id
-                        const isMine = String(senderId) === String(user?._id)
+                        const isMine = String(senderId) === String(userId)
                         return (
                           <div
                             key={message._id}
@@ -321,9 +345,13 @@ export default function ChatPage() {
                 </form>
               </>
             ) : (
-              <div className="h-full flex flex-col items-center justify-center text-gray-400">
+              <div className="flex-1 flex flex-col items-center justify-center text-gray-400 p-8">
                 <MessageCircle size={28} className="mb-2" />
-                <p className="text-sm">Select a conversation to start chatting.</p>
+                <p className="text-sm text-center">
+                  {isOwner
+                    ? 'Select a conversation or open Booking Requests and tap Message on a booking.'
+                    : 'Select a conversation to start chatting.'}
+                </p>
               </div>
             )}
           </section>

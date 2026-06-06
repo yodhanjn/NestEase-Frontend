@@ -19,6 +19,7 @@ import DailyFeedbackPage from './pages/dashboard/DailyFeedbackPage'
 import OwnerBookingsPage from './pages/dashboard/OwnerBookingsPage'
 import AdminDashboard from './pages/dashboard/AdminDashboard'
 import ChatPage from './pages/dashboard/ChatPage'
+import ChatErrorBoundary from './components/ui/ChatErrorBoundary'
 import ResidentRecommendationsPage from './pages/dashboard/ResidentRecommendationsPage'
 
 const ProtectedRoute = ({ children, roles }: { children: React.ReactNode; roles?: string[] }) => {
@@ -74,7 +75,11 @@ function AppRoutes() {
       } />
       <Route path="/dashboard/resident/chat" element={
         <ProtectedRoute roles={['resident']}>
-          <Layout><ChatPage /></Layout>
+          <Layout>
+            <ChatErrorBoundary>
+              <ChatPage />
+            </ChatErrorBoundary>
+          </Layout>
         </ProtectedRoute>
       } />
       <Route path="/dashboard/resident/recommendations" element={
@@ -83,15 +88,13 @@ function AppRoutes() {
         </ProtectedRoute>
       } />
 
-      <Route path="/dashboard/owner" element={
+      <Route path="/dashboard/owner/chat" element={
         <ProtectedRoute roles={['owner']}>
-          <Layout><OwnerDashboard /></Layout>
-        </ProtectedRoute>
-      } />
-
-      <Route path="/dashboard/owner/add-pg" element={
-        <ProtectedRoute roles={['owner']}>
-          <Layout><AddPGPage /></Layout>
+          <Layout>
+            <ChatErrorBoundary>
+              <ChatPage />
+            </ChatErrorBoundary>
+          </Layout>
         </ProtectedRoute>
       } />
       <Route path="/dashboard/owner/bookings" element={
@@ -99,9 +102,14 @@ function AppRoutes() {
           <Layout><OwnerBookingsPage /></Layout>
         </ProtectedRoute>
       } />
-      <Route path="/dashboard/owner/chat" element={
+      <Route path="/dashboard/owner/add-pg" element={
         <ProtectedRoute roles={['owner']}>
-          <Layout><ChatPage /></Layout>
+          <Layout><AddPGPage /></Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/dashboard/owner" element={
+        <ProtectedRoute roles={['owner']}>
+          <Layout><OwnerDashboard /></Layout>
         </ProtectedRoute>
       } />
 

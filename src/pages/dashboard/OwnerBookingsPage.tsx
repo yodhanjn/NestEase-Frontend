@@ -159,13 +159,19 @@ export default function OwnerBookingsPage() {
 
                     <div className="flex flex-col sm:flex-row flex-wrap gap-2 w-full sm:w-auto">
                       <button
-                        onClick={() =>
+                        onClick={() => {
+                          const pgId = booking.pg?._id || booking.pg
+                          const userId = booking.user?._id || booking.user
+                          if (!pgId || !userId) {
+                            toast.error('Unable to open chat for this booking')
+                            return
+                          }
                           navigate(
-                            `/dashboard/owner/chat?pgId=${booking.pg?._id}&userId=${booking.user?._id}&name=${encodeURIComponent(
+                            `/dashboard/owner/chat?pgId=${pgId}&userId=${userId}&name=${encodeURIComponent(
                               booking.user?.name || 'Resident'
-                            )}&pgName=${encodeURIComponent(booking.pg?.pgName || 'PG')}`
+                            )}&pgName=${encodeURIComponent(booking.pg?.pgName || 'PG')}&role=resident`
                           )
-                        }
+                        }}
                         className="text-xs px-3 py-1.5 rounded-lg border border-[#1A6B6B] text-[#1A6B6B] hover:bg-[#E8F4F4] flex items-center justify-center gap-1 w-full sm:w-auto"
                       >
                         <MessageCircle size={13} />

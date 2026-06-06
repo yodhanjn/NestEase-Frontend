@@ -81,50 +81,84 @@ export default function ChatPage() {
   useEffect(() => {
     if (!user?._id) return
 
+    let cancelled = false
+
     const init = async () => {
-      const convs = await loadConversations()
+      setLoading(true)
+      try {
+        const convs = await loadConversations()
+        if (cancelled) return
 
-      const initialFromList =
-        convs.find((c: Conversation) => c.pg?._id === initialPgId && c.otherUser?._id === initialUserId) ||
-        convs[0] ||
-        null
+        const hasUrlTarget = Boolean(initialPgId && initialUserId)
+        const matchedFromUrl = hasUrlTarget
+          ? convs.find(
+              (c: Conversation) =>
+                String(c.pg?._id) === String(initialPgId) &&
+                String(c.otherUser?._id) === String(initialUserId)
+            )
+          : null
 
-      if (initialFromList) {
-        setActive(initialFromList)
-        await loadMessages(initialFromList.pg._id, initialFromList.otherUser._id)
-      } else if (initialPgId && initialUserId) {
-        await loadMessages(initialPgId, initialUserId)
+        if (matchedFromUrl) {
+          setActive(matchedFromUrl)
+          await loadMessages(matchedFromUrl.pg._id, matchedFromUrl.otherUser._id)
+        } else if (hasUrlTarget) {
+          setActive(null)
+          setMessages([])
+          await loadMessages(initialPgId, initialUserId)
+        } else if (convs[0]) {
+          setActive(convs[0])
+          await loadMessages(convs[0].pg._id, convs[0].otherUser._id)
+        } else {
+          setActive(null)
+          setMessages([])
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
       }
-      setLoading(false)
     }
 
-    const socket = connectChatSocket(user._id)
-    socket.off('chat:new_message')
-    socket.on('chat:new_message', (message: ChatMessage) => {
-      const currentActive = activeMetaRef.current
-      const msgPgId = typeof message.pg === 'string' ? message.pg : message.pg?._id
-      const msgOtherUserId =
-        message.sender._id === user._id ? message.receiver._id : message.sender._id
-
-      const isActiveChat =
-        currentActive &&
-        currentActive.pg._id === msgPgId &&
-        currentActive.otherUser._id === msgOtherUserId
-
-      if (isActiveChat) {
-        setMessages((prev) => (prev.some((m) => m._id === message._id) ? prev : [...prev, message]))
-      }
-      loadConversations()
-    })
-
     init()
+
+    return () => {
+      cancelled = true
+    }
+  }, [user?._id, initialPgId, initialUserId])
+
+  useEffect(() => {
+    if (!user?._id) return
+
+    let socket: ReturnType<typeof connectChatSocket> | null = null
+    try {
+      socket = connectChatSocket(user._id)
+      socket.off('chat:new_message')
+      socket.on('chat:new_message', (message: ChatMessage) => {
+        const currentActive = activeMetaRef.current
+        const msgPgId = typeof message.pg === 'string' ? message.pg : message.pg?._id
+        const senderId =
+          typeof message.sender === 'string' ? message.sender : message.sender?._id
+        const receiverId =
+          typeof message.receiver === 'string' ? message.receiver : message.receiver?._id
+        const msgOtherUserId = String(senderId) === String(user._id) ? receiverId : senderId
+
+        const isActiveChat =
+          currentActive &&
+          String(currentActive.pg._id) === String(msgPgId) &&
+          String(currentActive.otherUser._id) === String(msgOtherUserId)
+
+        if (isActiveChat) {
+          setMessages((prev) => (prev.some((m) => m._id === message._id) ? prev : [...prev, message]))
+        }
+        loadConversations()
+      })
+    } catch {
+      // Chat still works without live socket updates.
+    }
 
     return () => {
       const s = getChatSocket()
       s?.off('chat:new_message')
       disconnectChatSocket()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?._id])
 
   const handleSelectConversation = async (conversation: Conversation) => {
@@ -178,7 +212,7 @@ export default function ChatPage() {
             : 'Chat directly with PG owners about listings.'}
         </p>
 
-        <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden grid grid-cols-1 md:grid-cols-3 min-h-[620px]">
+        <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden grid grid-cols-1 md:grid-cols-3 min-h-[620px] md:min-h-[620px]">
           <aside className="border-r border-gray-100">
             <div className="p-4 border-b border-gray-100">
               <h2 className="font-semibold text-[#2D2D2D]">Conversations</h2>
@@ -221,7 +255,7 @@ export default function ChatPage() {
             </div>
           </aside>
 
-          <section className="md:col-span-2 flex flex-col">
+          <section className="md:col-span-2 flex flex-col min-h-[420px]">
             {activeMeta ? (
               <>
                 <div className="p-4 border-b border-gray-100">
@@ -229,7 +263,7 @@ export default function ChatPage() {
                   <p className="text-xs text-gray-500">{activeMeta.pg.pgName}</p>
                 </div>
 
-                <div className="flex-1 p-4 overflow-y-auto bg-[#FAFAFA]">
+                <div className="flex-1 min-h-[280px] p-4 overflow-y-auto bg-[#FAFAFA]">
                   {messages.length === 0 ? (
                     <div className="h-full flex items-center justify-center text-sm text-gray-400">
                       No messages yet. Start the conversation.
@@ -237,7 +271,9 @@ export default function ChatPage() {
                   ) : (
                     <div className="space-y-3">
                       {messages.map((message) => {
-                        const isMine = message.sender?._id === user?._id
+                        const senderId =
+                          typeof message.sender === 'string' ? message.sender : message.sender?._id
+                        const isMine = String(senderId) === String(user?._id)
                         return (
                           <div
                             key={message._id}

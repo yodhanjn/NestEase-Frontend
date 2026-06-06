@@ -5,8 +5,13 @@ let socket: Socket | null = null
 export const connectChatSocket = (userId: string) => {
   if (socket && socket.connected) return socket
 
-  socket = io(import.meta.env.VITE_API_URL, {
-    transports: ['websocket'],
+  const apiUrl = import.meta.env.VITE_API_URL
+  if (!apiUrl) {
+    throw new Error('VITE_API_URL is not configured')
+  }
+
+  socket = io(apiUrl, {
+    transports: ['websocket', 'polling'],
     query: { userId },
   })
 

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { getOwnerBookings, updateBookingStatus } from '../../services/bookingService'
 import toast from 'react-hot-toast'
-import { CalendarDays, IndianRupee, MapPin, User } from 'lucide-react'
+import { CalendarDays, IndianRupee, MapPin, MessageCircle, User } from 'lucide-react'
 
 type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed'
 
@@ -13,6 +14,7 @@ const statusBadge: Record<BookingStatus, string> = {
 }
 
 export default function OwnerBookingsPage() {
+  const navigate = useNavigate()
   const [bookings, setBookings] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
@@ -156,6 +158,19 @@ export default function OwnerBookingsPage() {
                     </span>
 
                     <div className="flex flex-col sm:flex-row flex-wrap gap-2 w-full sm:w-auto">
+                      <button
+                        onClick={() =>
+                          navigate(
+                            `/dashboard/owner/chat?pgId=${booking.pg?._id}&userId=${booking.user?._id}&name=${encodeURIComponent(
+                              booking.user?.name || 'Resident'
+                            )}&pgName=${encodeURIComponent(booking.pg?.pgName || 'PG')}`
+                          )
+                        }
+                        className="text-xs px-3 py-1.5 rounded-lg border border-[#1A6B6B] text-[#1A6B6B] hover:bg-[#E8F4F4] flex items-center justify-center gap-1 w-full sm:w-auto"
+                      >
+                        <MessageCircle size={13} />
+                        Message
+                      </button>
                       <button
                         disabled={updatingId === booking._id || booking.status === 'confirmed'}
                         onClick={() => handleUpdateStatus(booking._id, 'confirmed')}

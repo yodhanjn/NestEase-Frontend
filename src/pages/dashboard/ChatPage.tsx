@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Send, MessageCircle } from 'lucide-react'
@@ -37,6 +37,7 @@ export default function ChatPage() {
   const initialUserId = searchParams.get('userId') || ''
   const initialOtherName = searchParams.get('name') || 'User'
   const initialPgName = searchParams.get('pgName') || 'PG'
+  const initialOtherRole = searchParams.get('role') || (user?.role === 'owner' ? 'resident' : 'owner')
 
   const activeMeta = useMemo(() => {
     if (active) return active
@@ -44,13 +45,18 @@ export default function ChatPage() {
       return {
         conversationKey: `${initialPgId}::temp`,
         pg: { _id: initialPgId, pgName: initialPgName },
-        otherUser: { _id: initialUserId, name: initialOtherName, role: 'owner' },
+        otherUser: { _id: initialUserId, name: initialOtherName, role: initialOtherRole },
         unreadCount: 0,
         lastMessage: { _id: 'temp', content: '', createdAt: new Date().toISOString() },
       } as Conversation
     }
     return null
-  }, [active, initialPgId, initialUserId, initialOtherName, initialPgName])
+  }, [active, initialPgId, initialUserId, initialOtherName, initialPgName, initialOtherRole])
+
+  const activeMetaRef = useRef(activeMeta)
+  useEffect(() => {
+    activeMetaRef.current = activeMeta
+  }, [activeMeta])
 
   const loadConversations = async () => {
     try {
@@ -95,14 +101,15 @@ export default function ChatPage() {
     const socket = connectChatSocket(user._id)
     socket.off('chat:new_message')
     socket.on('chat:new_message', (message: ChatMessage) => {
+      const currentActive = activeMetaRef.current
       const msgPgId = typeof message.pg === 'string' ? message.pg : message.pg?._id
       const msgOtherUserId =
         message.sender._id === user._id ? message.receiver._id : message.sender._id
 
       const isActiveChat =
-        activeMeta &&
-        activeMeta.pg._id === msgPgId &&
-        activeMeta.otherUser._id === msgOtherUserId
+        currentActive &&
+        currentActive.pg._id === msgPgId &&
+        currentActive.otherUser._id === msgOtherUserId
 
       if (isActiveChat) {
         setMessages((prev) => (prev.some((m) => m._id === message._id) ? prev : [...prev, message]))
@@ -165,7 +172,11 @@ export default function ChatPage() {
     <div className="min-h-screen" style={{ backgroundColor: '#F9F9F9' }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <h1 className="text-2xl font-bold text-[#2D2D2D] mb-1">Messages</h1>
-        <p className="text-sm text-gray-500 mb-6">Chat directly with PG owners and residents.</p>
+        <p className="text-sm text-gray-500 mb-6">
+          {user?.role === 'owner'
+            ? 'Chat with residents who booked your PGs or messaged you first.'
+            : 'Chat directly with PG owners about listings.'}
+        </p>
 
         <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden grid grid-cols-1 md:grid-cols-3 min-h-[620px]">
           <aside className="border-r border-gray-100">
@@ -174,7 +185,11 @@ export default function ChatPage() {
             </div>
             <div className="max-h-[560px] overflow-y-auto">
               {conversations.length === 0 ? (
-                <div className="p-6 text-sm text-gray-500">No conversations yet.</div>
+                <div className="p-6 text-sm text-gray-500">
+                  {user?.role === 'owner'
+                    ? 'No conversations yet. Open Booking Requests and use Message on a resident booking to start chatting.'
+                    : 'No conversations yet. Open a PG listing and use Chat with Owner to start.'}
+                </div>
               ) : (
                 conversations.map((conversation) => (
                   <button
